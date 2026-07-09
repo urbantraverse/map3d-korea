@@ -1,0 +1,9 @@
+# 시크릿 (마스터 .env는 이 프로젝트 밖에 있지만 방어적으로 항상 제외)
+.env
+*.env
+
+# OS/툴 메타데이터
+.DS_Store
+__pycache__/
+*.pyc
+.claude/

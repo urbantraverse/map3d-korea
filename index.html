@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>map3d-korea — 한국 행정동 3D 박스 라이브 데모</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0f1117;
+    --card: #171a23;
+    --border: #2a2e3a;
+    --text: #e8e9ed;
+    --muted: #9098a8;
+    --accent: #5b9dff;
+    --accent2: #ffd166;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7fb;
+      --card: #ffffff;
+      --border: #e2e4ec;
+      --text: #1c1f26;
+      --muted: #5b6270;
+      --accent: #0066cc;
+      --accent2: #b8860b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px 60px;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 0 0 6px; }
+  .tagline { color: var(--muted); font-size: 15px; margin-bottom: 4px; }
+  .credit { color: var(--muted); font-size: 12px; margin-bottom: 32px; }
+  .credit a { color: var(--muted); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+       margin: 40px 0 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 22px; text-decoration: none; color: inherit; display: block;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card h3 { margin: 0 0 4px; font-size: 17px; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+  .stat-row { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+  .stat { font-size: 12px; color: var(--muted); }
+  .stat b { display: block; font-size: 18px; color: var(--text); font-weight: 600; }
+  .stat.hi b { color: var(--accent); }
+  .open { margin-top: 14px; font-size: 12px; color: var(--accent); font-weight: 600; }
+  p.desc { color: var(--muted); font-size: 14px; max-width: 640px; }
+  .links { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+  .links a {
+    font-size: 13px; color: var(--text); text-decoration: none;
+    border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px;
+  }
+  .links a:hover { border-color: var(--accent); color: var(--accent); }
+  footer { margin-top: 50px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 18px; }
+  footer a { color: var(--muted); }
+  code { background: var(--border); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏘️ map3d-korea</h1>
+  <div class="tagline">건축HUB(건축물대장) × VWorld 건물 footprint를 PNU로 조인해, 한국 행정동을 실측 3D 박스 도시로 세운다.</div>
+  <div class="credit">아이디어 출처: <a href="https://github.com/cartesiancs/map3d" target="_blank" rel="noopener">cartesiancs/map3d</a> (Hyeong Jun Huh, MIT) — 코드·데이터는 전부 독립 구현. 자세한 내용은 <a href="https://github.com/urbantraverse/map3d-korea#readme" target="_blank" rel="noopener">README §10</a> 참조.</div>
+
+  <h2>라이브 3D 뷰 — 클릭하면 바로 열림 (설치 불필요)</h2>
+  <div class="cards">
+    <a class="card" href="pilots/munhwa-dong/munhwa_3d_v2.html">
+      <h3>마산합포구 문화동</h3>
+      <div class="sub">첫 파일럿 · 단독·다가구 노후형</div>
+      <div class="stat-row">
+        <div class="stat hi"><b>82.2%</b>매칭률 (199/242)</div>
+        <div class="stat"><b>76%</b>노후도 (1990 이전)</div>
+        <div class="stat"><b>13%</b>반지하 보유</div>
+      </div>
+      <div class="open">3D 박스 열기 →</div>
+    </a>
+    <a class="card" href="pilots/daechang-dong/daechang_3d.html">
+      <h3>마산합포구 대창동</h3>
+      <div class="sub">두 번째 파일럿 · <code>--dong</code> 지오코딩으로 자동 생성</div>
+      <div class="stat-row">
+        <div class="stat hi"><b>97.2%</b>매칭률 (176/181)</div>
+        <div class="stat"><b>34.7%</b>노후도 (1990 이전)</div>
+        <div class="stat"><b>14.2%</b>반지하 보유</div>
+      </div>
+      <div class="open">3D 박스 열기 →</div>
+    </a>
+  </div>
+  <p class="desc" style="margin-top:14px;">
+    호버하면 건물별 속성(사용승인 연도·층수·구조·반지하 여부 등)이 뜬다. 드래그로 회전, Shift+드래그로 기울기 조절.
+  </p>
+
+  <h2>코드 · 파이프라인</h2>
+  <p class="desc">
+    이 페이지는 정적 스냅샷이다. 임의의 다른 행정동을 직접 돌려보거나(<code>--dong "동 이름"</code> 한 줄),
+    지도에서 드래그로 영역을 선택하는 인터랙티브 수집 도구를 쓰려면 저장소를 클론해서 로컬로 실행해야 한다.
+  </p>
+  <div class="links">
+    <a href="https://github.com/urbantraverse/map3d-korea" target="_blank" rel="noopener">GitHub 저장소</a>
+    <a href="https://github.com/urbantraverse/map3d-korea#readme" target="_blank" rel="noopener">README (실행 방법)</a>
+    <a href="https://github.com/urbantraverse/map3d-korea/blob/main/pipeline.py" target="_blank" rel="noopener">pipeline.py</a>
+  </div>
+
+  <footer>
+    buildhub(국토교통부 건축HUB) · VWorld(국토교통부 공간정보 오픈플랫폼) 공공데이터 기반.
+    시작: 2026-05-27 · <a href="https://github.com/urbantraverse/map3d-korea">map3d-korea</a>
+  </footer>
+</div>
+</body>
+</html>

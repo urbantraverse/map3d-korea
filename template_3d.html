@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>{{TITLE}}</title>
+<script src="https://unpkg.com/deck.gl@9.0.0/dist.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+body { margin: 0; font-family: -apple-system, "Noto Sans KR", sans-serif; }
+#map { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; }
+#panel { position: absolute; top: 12px; left: 12px; background: rgba(255,255,255,0.96);
+  padding: 14px 18px; border-radius: 10px; box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+  max-width: 340px; z-index: 10; font-size: 13px; line-height: 1.5; }
+#panel h2 { margin: 0 0 8px; font-size: 15px; color: #222; }
+.subtitle { color: #666; font-size: 11px; margin-bottom: 10px; }
+.legend { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; }
+.legend-item { display: flex; align-items: center; margin: 4px 0; }
+.legend-color { width: 18px; height: 14px; margin-right: 8px; border: 1px solid #444; border-radius: 2px; }
+.stats { font-size: 11px; color: #555; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ccc; line-height: 1.7; }
+.stats b { color: #c1121f; }
+#tooltip { position: absolute; background: rgba(20,20,30,0.94); color: white;
+  padding: 10px 14px; border-radius: 5px; font-size: 12px; pointer-events: none;
+  z-index: 20; max-width: 320px; line-height: 1.5; display: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4); }
+#tooltip b { color: #ffd166; }
+.warn { color: #ff6b6b; font-weight: bold; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="deck-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:auto;"></canvas>
+<div id="panel">
+  <h2>🏘️ {{TITLE}}</h2>
+  <div class="subtitle">buildhub × VWorld PNU 조인 · 매칭률 {{RATE}}</div>
+
+  <div class="legend">
+    <div style="font-size:11px; color:#666; margin-bottom:4px;">사용승인 시기 (높이 = 층수×3m)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#a4161a"></div>~1970s · 최노후</div>
+    <div class="legend-item"><div class="legend-color" style="background:#dd6e42"></div>1980s</div>
+    <div class="legend-item"><div class="legend-color" style="background:#e8c468"></div>1990s</div>
+    <div class="legend-item"><div class="legend-color" style="background:#8eb59a"></div>2000+</div>
+    <div class="legend-item"><div class="legend-color" style="background:#999"></div>미상</div>
+    <div class="legend-item" style="margin-top:6px;"><div class="legend-color" style="background:white; border:2px solid #000;"></div>반지하 보유 (윤곽선 굵게)</div>
+  </div>
+
+  <div class="stats">
+    매칭 건물: <b>{{TOTAL}}건</b> / buildhub {{BH_TOTAL}} ({{RATE}})<br>
+    시기별: {{ERA_DIST}}<br>
+    반지하: <b>{{BASEMENT}}건</b> · 다중페어: {{MULTI}}건<br>
+    <span style="color:#888">호버: 속성 / 드래그: 회전 / Shift+드래그: 기울기</span>
+  </div>
+</div>
+<div id="tooltip"></div>
+<script>
+const data = {{DATA_JSON}};
+const tooltip = document.getElementById('tooltip');
+
+const eraColor = {
+  'pre1970': [164, 22, 26, 230],
+  '~1970':   [164, 22, 26, 230],
+  '1970s':   [164, 22, 26, 230],
+  '1980s':   [221, 110, 66, 230],
+  '1990s':   [232, 196, 104, 230],
+  '2000+':   [142, 181, 154, 230],
+  'post2000':[142, 181, 154, 230],
+  '미상':    [153, 153, 153, 210],
+  'unknown': [153, 153, 153, 210],
+  'no_buildhub': [200, 200, 200, 160],
+};
+
+const { Deck, PolygonLayer } = deck;
+
+const INITIAL_VIEW_STATE = {
+  longitude: {{CENTER_LNG}}, latitude: {{CENTER_LAT}},
+  zoom: {{ZOOM}}, pitch: 55, bearing: 15
+};
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  center: [INITIAL_VIEW_STATE.longitude, INITIAL_VIEW_STATE.latitude],
+  zoom: INITIAL_VIEW_STATE.zoom,
+  pitch: INITIAL_VIEW_STATE.pitch,
+  bearing: INITIAL_VIEW_STATE.bearing,
+  interactive: true,
+});
+
+map.on('load', () => {
+  const deckgl = new Deck({
+    canvas: 'deck-canvas',
+    parent: map.getContainer(),
+    initialViewState: INITIAL_VIEW_STATE,
+    controller: true,
+    onViewStateChange: ({ viewState }) => {
+      map.jumpTo({
+        center: [viewState.longitude, viewState.latitude],
+        zoom: viewState.zoom, pitch: viewState.pitch, bearing: viewState.bearing
+      });
+    },
+    layers: [
+      new PolygonLayer({
+        id: 'buildings',
+        data: data.features,
+        extruded: true,
+        wireframe: true,
+        pickable: true,
+        getPolygon: f => f.geometry.coordinates[0][0],
+        getElevation: f => Math.max(f.properties.height_m || 3, 3),
+        getFillColor: f => eraColor[f.properties.era] || [180, 180, 180, 220],
+        getLineColor: f => (f.properties.ugrndFlr || 0) >= 1 ? [10, 10, 10, 255] : [80, 80, 80, 100],
+        getLineWidth: f => (f.properties.ugrndFlr || 0) >= 1 ? 2 : 0.3,
+        lineWidthMinPixels: 1,
+        onHover: ({ object, x, y }) => {
+          if (object) {
+            const p = object.properties;
+            tooltip.innerHTML = `
+              <b>${p.platPlc || p.buld_nm || ''}</b>${p.dongNm ? ' · ' + p.dongNm : ''}<br>
+              ${p.rd_nm || ''} ${p.buld_no || ''}<br>
+              <b>${p.mainPurps || (p.unmatched ? '(buildhub 미매칭)' : '')}</b> · ${p.strct || ''}<br>
+              사용승인: <b>${p.useAprYear || '미상'}</b> (${p.era})<br>
+              지상 ${p.grndFlr ?? '-'}층 · 지하 ${p.ugrndFlr ?? 0}층 ${(p.ugrndFlr || 0) >= 1 ? '<span class="warn">⚠️반지하</span>' : ''}<br>
+              연면적 ${p.totArea ?? 0}㎡ · 가구 ${p.fmlyCnt ?? 0} · 호 ${p.hhldCnt ?? 0}
+            `;
+            tooltip.style.left = (x + 14) + 'px';
+            tooltip.style.top = (y + 14) + 'px';
+            tooltip.style.display = 'block';
+          } else {
+            tooltip.style.display = 'none';
+          }
+        }
+      })
+    ]
+  });
+});
+</script>
+</body>
+</html>
